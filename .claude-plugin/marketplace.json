@@ -1,0 +1,15 @@
+{
+  "name": "scoro-ai",
+  "description": "Official Scoro plugins for AI coding agents — Scoro API guidance, skills, and integrations.",
+  "owner": {
+    "name": "Scoro",
+    "url": "https://www.scoro.com"
+  },
+  "plugins": [
+    {
+      "name": "scoro",
+      "source": "./",
+      "description": "Scoro API v4 best practices for AI coding agents."
+    }
+  ]
+}
