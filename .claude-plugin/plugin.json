@@ -5,10 +5,15 @@
   "version": "0.1.0",
   "author": {
     "name": "Scoro",
+    "email": "help@scoro.com",
     "url": "https://www.scoro.com"
   },
   "homepage": "https://developers.scoro.com",
   "repository": "https://github.com/Scoro-Software/ai",
+  "documentationUrl": "https://github.com/Scoro-Software/ai#readme",
+  "supportUrl": "https://github.com/Scoro-Software/ai/issues",
+  "privacyPolicyUrl": "https://www.scoro.com/privacy-policy",
+  "termsOfServiceUrl": "https://www.scoro.com/terms-of-use/",
   "license": "Apache-2.0",
   "keywords": ["scoro", "api", "crm", "finance", "project-management", "psa", "automation"]
 }
