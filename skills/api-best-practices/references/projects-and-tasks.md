@@ -9,7 +9,7 @@
 
 ## Projects
 
-Required field: `companyId` — every project must be linked to a client company.
+Required fields: `name` and `companyId` — every project must be linked to a client company.
 
 Filter projects for reporting:
 
@@ -23,13 +23,19 @@ Project budget is a **separate API call** — not returned in the project list o
 GET /projects/{id}/budget
 ```
 
-Key fields returned:
+The response is keyed on `budgetType`: `"manual"` (budget entered on the project) or `"quote"` (budget derived from the linked quote). Key fields:
 
 | Field | Meaning |
 |---|---|
-| `budgetAmount` | Total budget for the project |
-| `actualAmount` | Cost incurred so far |
-| `trackedAmount` | Revenue tracked against the project |
+| `budgetedSum` | Budget amount in site currency |
+| `budgetedDuration` | Planned duration in seconds |
+| `earnedRevenue` | Revenue so far, based on logged time and selling price |
+| `estimatedLaborCost`, `actualLaborCost` | Planned vs. incurred labor cost |
+| `estimatedBills`, `estimatedExpenses`, `actualBillsSum`, `actualExpensesSum` | Purchase side, on `manual` budgets |
+| `estimatedBillsAndExpenses`, `actualBillsAndExpenses` | Purchase side, combined, on `quote` budgets |
+| `currency`, `priceListId` | Budget currency and price list |
+
+Cost and margin values are hidden for users without finance permissions.
 
 ## Project phases
 
@@ -39,7 +45,9 @@ Phases are not returned with the project by default — fetch them separately:
 GET /projects/{id}/phases
 ```
 
-When creating tasks, use `projectPhaseId` to assign a task to a specific phase:
+A phase has `title`, `type` (`"phase"` or `"milestone"`), `startDate`, `endDate` and `sortOrder`. `title` and `type` are required when creating one with `POST /projects/{projectId}/phases`.
+
+When creating tasks, use `projectPhaseId` to assign a task to a specific phase (the `projectId` is then filled in automatically):
 
 ```http
 POST /tasks
@@ -51,6 +59,8 @@ POST /tasks
 ```
 
 ## Tasks
+
+Only `name` is required — a task can exist without a project.
 
 Filter open tasks on a project:
 
@@ -69,7 +79,9 @@ POST /tasks
 }
 ```
 
-Task statuses are site-defined — read them from `GET /statuses?filters[entityType]=task` before creating or updating.
+Subtask rules: the parent must belong to a project, a subtask cannot have subtasks of its own, a task linked to a quote line cannot become a subtask, and a billable task cannot move under a non-billable parent. `PATCH` with `"parentId": null` promotes a subtask back to a top-level task.
+
+Task statuses are site-defined — read them from `GET /statuses?filters[modules][]=tasks` before creating or updating. `priorityId` is `1` (high), `2` (normal) or `3` (low). To complete a task, `POST /tasks/{id}/set-done` is simpler than guessing the site's "done" status code.
 
 ## Reporting pattern
 
@@ -87,12 +99,12 @@ For a complete project report, combine these calls:
 
 Always paginate all list responses with `perPage=100` — project task lists can be large.
 
-**Read-only pattern:** For reporting integrations, request only `r` scopes. Never write to Scoro during a reporting run.
+**Read-only pattern:** For reporting integrations, request only `r` scopes (`projects:r`, `tasks:r`, `bookings:r`, `revenue-forecast-periods:r`). Never write to Scoro during a reporting run.
 
 ## Traps to avoid
 
-- **Project budget requires a separate API call.** It is not included in `GET /projects` or `GET /projects/{id}`. If you're building a portfolio budget report, you will need one `GET /projects/{id}/budget` call per project — space these out to avoid rate limits.
+- **Project budget requires a separate API call.** It is not included in `GET /projects` or `GET /projects/{id}`. A portfolio budget report needs one `GET /projects/{id}/budget` call per project — watch the `X-RateLimit-Remaining` header.
 - **Task lists have no total count.** Always paginate until a page returns fewer items than `perPage`. A single page with 20 results does not mean there are only 20 tasks.
-- **Subtasks are not returned in task list responses by default.** To include subtasks in the response, add `includeSubtasks=true` to the filter. Without it, parent tasks appear without their children.
-- **Task statuses are site-defined.** Do not hardcode status values like `"open"` or `"done"` — read available statuses from `GET /statuses?filters[entityType]=task` and send the `code` string.
+- **Subtasks are not returned in task list responses by default.** To include them, pass `filters[includeSubtasks]=true`. Without it, parent tasks appear without their children.
+- **Task statuses are site-defined.** Do not hardcode status values like `"open"` or `"done"` — read available statuses from `GET /statuses?filters[modules][]=tasks` and send the `code` string.
 - **Project phases are not returned with the project.** A `GET /projects/{id}` response does not include phases. Fetch them from `GET /projects/{id}/phases` when you need phase assignments.

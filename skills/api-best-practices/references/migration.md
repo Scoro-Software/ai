@@ -17,7 +17,7 @@
 |---|---|
 | `apiKey` or `user_token` in the JSON request body | OAuth 2.0 Bearer token in `Authorization: Bearer <token>` header |
 
-v4 has no equivalent to a static API key. Every integration requires an OAuth app registered in the Scoro Developer Portal. See `references/getting-started.md` for the authorization flow.
+v4 has no equivalent to a static API key. Every integration requires an OAuth app registered in the Scoro Developer Portal, and scopes are enforced per endpoint at the API gateway. See `references/getting-started.md` for the authorization flow.
 
 ## Request format
 
@@ -35,10 +35,10 @@ v4 has no equivalent to a static API key. Every integration requires an OAuth ap
 | v2 | v4 |
 |---|---|
 | Envelope: `{status, statusCode, messages, data}` | Bare JSON (array or object) |
-| Errors returned as HTTP 200 with `status: "ERROR"` | Real HTTP error codes (400, 401, 403, 404, 429, 500) |
+| Errors returned as HTTP 200 with `status: "ERROR"` | Real HTTP error codes (400, 401, 403, 404, 429, 500) with an `{error, statusCode, timestamp, path, message}` body |
 | Success indicated by `status: "OK"` field | Indicated by HTTP 2xx status code |
 
-Replace all envelope parsing with direct HTTP status code checks. Remove any code that reads `response.status === "OK"`.
+Replace all envelope parsing with direct HTTP status code checks. Remove any code that reads `response.status === "OK"`. One exception to keep in mind: the gateway's `429` body still uses the v2-style envelope. See `references/conventions.md`.
 
 ## Pagination and filters
 
@@ -55,20 +55,22 @@ Replace all envelope parsing with direct HTTP status code checks. Remove any cod
 
 | v2 | v4 |
 |---|---|
-| Duration as `"HH:MM:SS"` string (e.g. `"1:30:00"`) | Duration as integer **seconds** (e.g. `5400`) |
+| Duration as `"HH:MM:SS"` string or integer seconds | Duration as integer **seconds** only (e.g. `5400`) |
 | Booleans as `1` / `0` | Booleans as `true` / `false` |
 | `company_account_id` in request body | `Scoro-Company-Account: <identifier>` request **header** (string, e.g. `"mycompany"`) |
-| Custom fields as `[{"id": 5, "value": "x"}, ...]` | Custom fields as `{"fieldName": "x"}` flat map |
+| Custom fields as `[{"id": 5, "value": "x"}, ...]` or a flat `{"c_field": "x"}` map | Custom fields inside a `customFields` object: `{"customFields": {"c_field": "x"}}` |
 | Status as numeric ID | Status as `code` string from `GET /statuses` |
 
 ## Document lines
 
-In v2, line items (invoice lines, quote lines, order lines, bill lines) were embedded in the parent document response. In v4, lines are **separate sub-resources** with their own endpoints.
+v2 embedded line items in the parent document's response and modify body. v4 keeps lines on the document for create (`lines` array in the `POST` body) and for detail views, and adds `/lines` sub-resource endpoints for listing, upserting and deleting individual lines.
 
 | v2 | v4 |
 |---|---|
-| Lines in parent response body | `GET /invoices/{id}/lines` |
-| Lines in modify body | `POST /invoices/{id}/lines` |
+| Lines in parent response body | Included in `GET /invoices/{id}`; on lists pass `includeLines=true` |
+| Lines in modify body (create) | `lines` array in `POST /invoices` |
+| Lines in modify body (update) | `POST /invoices/{id}/lines` with `{"lines": [...]}` — an upsert, lines with `id` are updated |
+| Removing a line | `DELETE /invoices/{id}/lines/{lineId}` |
 
 This applies to: invoices, quotes, orders, bills, purchase orders, expenses.
 
@@ -82,7 +84,7 @@ Replace `action: "syncData"` with a `modifiedDateTime` range filter on any list 
 GET /tasks?filters[modifiedDateTime][from]=2026-10-01T00:00:00Z
 ```
 
-Store the timestamp of your last successful sync run and use it as the `from` value on the next run.
+Store the timestamp of your last successful sync run and use it as the `from` value on the next run. Deleted records are not returned by this filter — poll `filters[isDeleted]=true&filters[deletedDateTime][from]=...` as well, or use webhooks.
 
 ## Endpoint mapping
 
@@ -113,8 +115,8 @@ Store the timestamp of your last successful sync run and use it as the `from` va
 | `bills` | `modify` | `POST /bills` or `PATCH /bills/{id}` |
 | `expenses` | `list` | `GET /expenses` |
 | `expenses` | `modify` | `POST /expenses` or `PATCH /expenses/{id}` |
-| `calendar` | `list` | `GET /calendar-events` |
-| `calendar` | `modify` | `POST /calendar-events` or `PATCH /calendar-events/{id}` |
+| `calendar` | `list` | `GET /calendar` |
+| `calendar` | `modify` | `POST /calendar` or `PATCH /calendar/{id}` |
 | `users` | `list` | `GET /users` |
 | `users/me` | `view` | `GET /users/me` |
 | `statuses` | `list` | `GET /statuses` |
@@ -132,8 +134,8 @@ Work through these in order:
 4. **Remove envelope parsing** — replace `response.data` access with direct field access, and replace `response.status === "OK"` checks with HTTP status code checks.
 5. **Convert filter objects** to query parameter notation using the deep-object syntax `filters[key][]=value`.
 6. **Convert value types**: duration strings → seconds, integer booleans → `true`/`false`, status IDs → status codes from `GET /statuses`.
-7. **Move line item operations** to the `/lines` sub-resource endpoints.
-8. **Replace `syncData`** with `filters[modifiedDateTime][from]` range filters.
+7. **Move line item updates** to the `/lines` upsert endpoints; keep lines embedded on create.
+8. **Replace `syncData`** with `filters[modifiedDateTime][from]` range filters, plus a deletion poll or webhooks.
 9. **Move `company_account_id`** from the request body to the `Scoro-Company-Account` request header.
-10. **Update custom field writes** from `[{id, value}]` arrays to `{"fieldName": value}` maps.
+10. **Update custom field writes** to a `customFields` object: `{"customFields": {"c_field": value}}`.
 11. **Test against a v4 sandbox** — verify field names in responses match expectations, and confirm pagination works correctly.
