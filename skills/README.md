@@ -19,7 +19,7 @@ claude plugin marketplace add Scoro-Software/ai
 claude plugin install scoro@scoro-ai
 ```
 
-Invoke the API skill with `/scoro:api-best-practices` in any session. The skill's `SKILL.md` loads automatically on invocation, and reference guides in `references/` are opened by the agent on demand.
+Claude loads the API skill on its own when a task touches the Scoro API; you can also invoke it with `/scoro:api-best-practices`. Reference guides in `references/` are opened by the agent on demand.
 
 The skill's `scripts/` folder holds starter scripts that generate a typed client (`generate-client.sh <generator>`) or a browsable endpoint reference (`generate-docs.sh`) from the public OpenAPI schema with openapi-generator. They need openapi-generator installed (Homebrew, npm or pip; Java 11+); see [`api-best-practices/scripts/README.md`](./api-best-practices/scripts/README.md). Installs that only reference `SKILL.md` by URL can still read the schema at `https://api.scoro.com/api/v4/reference/openapi` directly.
 

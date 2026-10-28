@@ -17,7 +17,7 @@ claude plugin marketplace add Scoro-Software/ai
 claude plugin install scoro@scoro-ai
 ```
 
-Then invoke the API skill with `/scoro:api-best-practices` in any session.
+Claude then loads the API skill on its own when a task touches the Scoro API, or you can invoke it with `/scoro:api-best-practices`.
 
 The API skill ships starter scripts that generate a typed client or an endpoint reference from the public OpenAPI schema with openapi-generator; they need openapi-generator installed (see [`skills/api-best-practices/scripts/README.md`](./skills/api-best-practices/scripts/README.md)).
 

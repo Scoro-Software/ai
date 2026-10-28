@@ -2,7 +2,7 @@
   "name": "scoro",
   "displayName": "Scoro",
   "description": "Plugin that includes the Scoro MCP server and Skills for common workflows",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "author": {
     "name": "Scoro",
     "email": "help@scoro.com",

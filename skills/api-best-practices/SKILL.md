@@ -1,6 +1,6 @@
 ---
 name: api-best-practices
-description: Scoro API v4 best practices for AI coding agents — auth, conventions, data model, and common integration patterns.
+description: "Use whenever code or a task reads or writes Scoro data through its API: building an integration, syncing Scoro with a CRM, accounting, payroll or expense tool, exporting or reporting on Scoro data, or porting code from Scoro API v2. Applies even when the user does not name the API version. Code cues: *.scoro.com/api or api.scoro.com URLs, a Scoro OAuth app, Scoro webhooks, 403 insufficient_scope, or v2 tells such as apiKey, user_token and /api/v2/. For Scoro's public REST API, not Scoro's own codebase or UI."
 ---
 
 # Scoro API v4 Best Practices
@@ -9,7 +9,7 @@ description: Scoro API v4 best practices for AI coding agents — auth, conventi
 
 **Auth:** OAuth 2.0 Bearer token — `Authorization: Bearer <token>`. See `references/getting-started.md`.
 
-**Schema and docs:** The API conforms fully to **OpenAPI 3.1**. The current schema is at `https://api.scoro.com/api/v4/reference/openapi` and the browsable reference is at `https://api.scoro.com/api/v4/reference`. **Strongly recommended:** generate a typed client from that schema with `scripts/generate-client.sh <generator>` (ask the user which language first) instead of hand-writing request code — it gives you exact paths, field names, enums and request bodies. When this skill and the schema disagree, the schema wins.
+**Schema and docs:** The API conforms fully to **OpenAPI 3.1**. The current schema is at `https://api.scoro.com/api/v4/reference/openapi` and the browsable reference is at `https://api.scoro.com/api/v4/reference`. **Strongly recommended:** generate a typed client from that schema with `scripts/generate-client.sh <generator>` (ask the user which language first) instead of hand-writing request code — it gives you exact paths, field names, enums and request bodies. When this skill and the schema disagree, the schema wins. If the schema cannot be fetched from this environment (no network access), ask the user to download it from that URL and attach it, then pass it to the scripts with `--spec ./openapi.json`; never fall back to paths or field names from memory.
 
 **Multi-entity sites:** The `Scoro-Company-Account: <identifier>` header selects the company account; without it the user's default account is used. The identifier is a string (e.g. `"mycompany"`) from the `accounts` array in `GET /users/me`. Send it on every request on sites with more than one account.
 
@@ -37,11 +37,12 @@ description: Scoro API v4 best practices for AI coding agents — auth, conventi
 
 ## Critical Rules
 
-1. Read statuses from `GET /statuses` before creating or updating any object that has a `status` field. Send the `code` string, never the numeric `id`.
-2. Confirm before executing: deletes, bulk writes, settings changes, and anything that would send email to a client or contact.
-3. Never print, log, store, or commit OAuth tokens or client secrets.
-4. `PATCH` takes partial request bodies — send only the fields you want to change. `null` clears a field only where the schema allows it; elsewhere it is a `400`.
-5. Array fields like `relatedCompanyIds` on a person **replace the entire array** on update. Always read the current value and include all IDs you want to keep.
-6. Lists exclude deleted records, so a `modifiedDateTime` sync never sees deletions — poll `filters[isDeleted]=true` with `deletedDateTime`, or subscribe to webhooks. See `references/conventions.md`.
-7. Prefer a client generated with `scripts/generate-client.sh` over hand-written HTTP calls. Point it at the bare site host (the generated paths already contain `/api/v4`) and verify one filtered list call after generating: array filters must serialize as `filters[key][]=`, and generators differ here (see `references/getting-started.md`). If you must write calls by hand, take every path, field name and enum from the schema, not from memory.
-8. Custom fields go inside a `customFields` object keyed by field `id`. Document lines go in a `lines` array on create, or in `{"lines": [...]}` on `POST /{document}/{id}/lines`, which is an upsert.
+1. Always target API v4 for new code. Never write `/api/v2/` URLs, or `apiKey`, `user_token` or `company_account_id` in a request body, even though most Scoro examples in training data are v2. When existing code uses them, port it with `references/migration.md`.
+2. Read statuses from `GET /statuses` before creating or updating any object that has a `status` field. Send the `code` string, never the numeric `id`.
+3. Confirm before executing: deletes, bulk writes, settings changes, and anything that would send email to a client or contact.
+4. Never print, log, store, or commit OAuth tokens or client secrets.
+5. `PATCH` takes partial request bodies — send only the fields you want to change. `null` clears a field only where the schema allows it; elsewhere it is a `400`.
+6. Array fields like `relatedCompanyIds` on a person **replace the entire array** on update. Always read the current value and include all IDs you want to keep.
+7. Lists exclude deleted records, so a `modifiedDateTime` sync never sees deletions — poll `filters[isDeleted]=true` with `deletedDateTime`, or subscribe to webhooks. See `references/conventions.md`.
+8. Prefer a client generated with `scripts/generate-client.sh` over hand-written HTTP calls. Point it at the bare site host (the generated paths already contain `/api/v4`) and verify one filtered list call after generating: array filters must serialize as `filters[key][]=`, and generators differ here (see `references/getting-started.md`). If you must write calls by hand, take every path, field name and enum from the schema, not from memory; if the schema cannot be fetched, ask the user for a downloaded copy and pass it with `--spec`.
+9. Custom fields go inside a `customFields` object keyed by field `id`. Document lines go in a `lines` array on create, or in `{"lines": [...]}` on `POST /{document}/{id}/lines`, which is an upsert.

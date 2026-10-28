@@ -112,7 +112,7 @@ trap 'rm -rf "$tmp"' EXIT
 case "$spec" in
   http://*|https://*)
     echo "Downloading the schema from $spec" >&2
-    curl -fsSL --retry 3 -A "$USER_AGENT" -o "$tmp/openapi.json" "$spec" || fail 4 "could not download the schema from $spec"
+    curl -fsSL --retry 3 -A "$USER_AGENT" -o "$tmp/openapi.json" "$spec" || fail 4 "could not download the schema from $spec. If this environment has no network access, ask the user to download it from $SCHEMA_URL and pass the file with --spec ./openapi.json"
     spec="$tmp/openapi.json"
     ;;
   *)
