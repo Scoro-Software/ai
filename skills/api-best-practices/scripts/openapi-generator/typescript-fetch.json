@@ -1,0 +1,10 @@
+{
+  "npmName": "scoro-api-client",
+  "npmVersion": "4.0.0",
+  "supportsES6": true,
+  "withInterfaces": true,
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "inlineSchemaNameMappings": {
+    "createCompanyComment_201_response": "CreatedId"
+  }
+}

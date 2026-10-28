@@ -1,0 +1,17 @@
+{
+  "packageName": "scoro_api",
+  "projectName": "scoro-api-client",
+  "packageVersion": "4.0.0",
+  "useOneOfDiscriminatorLookup": true,
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "hideGenerationTimestamp": true,
+  "globalProperties": {
+    "apiTests": "false",
+    "modelTests": "false",
+    "apiDocs": "false",
+    "modelDocs": "false"
+  },
+  "inlineSchemaNameMappings": {
+    "createCompanyComment_201_response": "CreatedId"
+  }
+}

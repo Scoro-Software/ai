@@ -6,7 +6,7 @@ Agent skills that give AI coding assistants accurate, up-to-date guidance on wor
 
 | Skill | Description | Status |
 |---|---|---|
-| [api-best-practices](./api-best-practices/) | Scoro API v4 best practices — auth, conventions, data model, CRM sync, finance, resource planning, time tracking, and v2→v4 migration | ✅ Available |
+| [api-best-practices](./api-best-practices/) | Scoro API v4 best practices — auth, conventions, data model, CRM sync, finance, resource planning, time tracking, v2→v4 migration, and starter scripts that generate a typed client or a markdown endpoint reference with openapi-generator | ✅ Available |
 
 ## Installation
 
@@ -17,6 +17,8 @@ claude plugin install scoro@scoro-ai
 ```
 
 Invoke the API skill with `/scoro:api-best-practices` in any session. The skill's `SKILL.md` loads automatically on invocation, and reference guides in `references/` are opened by the agent on demand.
+
+The skill's `scripts/` folder holds starter scripts that generate a typed client (`generate-client.sh <generator>`) or a browsable endpoint reference (`generate-docs.sh`) from the public OpenAPI schema with openapi-generator. They need Node 18+ and Java 11+; see [`api-best-practices/scripts/README.md`](./api-best-practices/scripts/README.md). Installs that only reference `SKILL.md` by URL can still read the schema at `https://api.scoro.com/api/v4/reference/openapi` directly.
 
 ### Cursor
 
@@ -40,7 +42,7 @@ Add to `.github/copilot-instructions.md`:
 When writing code that calls the Scoro API, follow the guidance in `skills/api-best-practices/SKILL.md` and the relevant file in `skills/api-best-practices/references/`.
 ```
 
-Then commit the `skills/api-best-practices/` folder to your repo so Copilot can reference the files.
+Then commit the whole `skills/api-best-practices/` folder, including `scripts/`, to your repo so Copilot can reference the files.
 
 ### Windsurf
 
