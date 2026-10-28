@@ -227,7 +227,7 @@ For near-real-time sync, prefer webhooks over polling. `POST /webhooks` with `mo
 ## Traps to avoid
 
 - **No total count in responses.** Never assume you have all records after fetching one page. Always paginate until a short page.
-- **Incremental sync uses `modifiedDateTime`, not a `syncData` action** (that was a v2 concept) — and it never returns deleted records. Handle deletions separately (see Incremental sync).
+- **Incremental sync is a `modifiedDateTime` range filter** (the v2 `modified_date` filter with new spelling; there is no sync action) — and it never returns deleted records. Handle deletions separately (see Incremental sync).
 - **`POST` is not idempotent** — if a request times out, check for an existing record before retrying to avoid duplicates.
 - **`PATCH` sends a partial body.** Omit fields you don't intend to change. `null` clears a field only where the field is nullable; elsewhere it is a `400`.
 - **Line upsert bodies are objects.** `POST /{document}/{id}/lines` takes `{"lines": [...]}`; a bare array is rejected.

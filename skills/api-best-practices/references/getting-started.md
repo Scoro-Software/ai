@@ -11,7 +11,7 @@
 
 ## Registering a Developer Portal app
 
-Register at [developer.scoro.com](https://developer.scoro.com).
+Register at [developers.scoro.com](https://developers.scoro.com).
 
 - **Private apps** are tied to specific Scoro sites and work without review — use for internal integrations and development.
 - **Public apps** (for distribution to other Scoro customers) require Scoro review before they work on sites you don't own.
