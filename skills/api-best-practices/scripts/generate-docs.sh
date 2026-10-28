@@ -1,22 +1,50 @@
 #!/usr/bin/env bash
 # Generate a browsable markdown reference of the Scoro API v4 with openapi-generator.
 #
-#   scripts/generate-docs.sh [output-dir]      default ./scoro-api-docs
+#   scripts/generate-docs.sh [output-dir] [--spec URL-OR-FILE] [-- <extra generate arguments>]
 #
-# Needs Node 18+ and Java 11+. Environment: SCORO_OPENAPI_SPEC (schema URL or file),
-# OPENAPI_GENERATOR_ARGS (extra generate arguments). Details in scripts/README.md.
+#   output-dir   default ./scoro-api-docs
+#   --spec       schema URL or local file (default: the public schema)
+#
+# Needs openapi-generator installed (the script says how when it is missing). Details in scripts/README.md.
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-case "${1:-}" in
-  -h|--help)
-    echo "usage: generate-docs.sh [output-dir]   (default ./scoro-api-docs)"
-    exit 2
-    ;;
-esac
-out=${1:-./scoro-api-docs}
+out=""
+passthrough=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      echo "usage: generate-docs.sh [output-dir] [--spec URL-OR-FILE] [-- <extra generate arguments>]"
+      exit 2
+      ;;
+    --)
+      passthrough+=("$@")
+      break
+      ;;
+    --spec)
+      [ $# -ge 2 ] || { echo "error: --spec needs a URL or a file path" >&2; exit 2; }
+      passthrough+=("$1" "$2")
+      shift 2
+      ;;
+    --spec=*)
+      passthrough+=("$1")
+      shift
+      ;;
+    -*)
+      echo "error: unknown option $1" >&2
+      exit 2
+      ;;
+    *)
+      [ -z "$out" ] || { echo "error: unexpected argument $1" >&2; exit 2; }
+      out=$1
+      shift
+      ;;
+  esac
+done
+out=${out:-./scoro-api-docs}
 
-"$here/openapi-generator/run.sh" markdown "$out"
+"$here/openapi-generator/run.sh" markdown "$out" ${passthrough[@]+"${passthrough[@]}"}
 
 cat <<NEXT
 

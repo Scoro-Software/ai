@@ -1,21 +1,18 @@
 #!/usr/bin/env bash
-# Shared runner behind generate-client.sh and generate-docs.sh: runs the pinned
-# openapi-generator through npx against the Scoro API v4 schema.
+# Shared runner behind generate-client.sh and generate-docs.sh: runs an installed
+# openapi-generator against the Scoro API v4 schema. It downloads nothing but the
+# schema; install the generator first (see the message it prints when missing).
 #
-#   run.sh <generator> <output-dir> [config.json]
+#   run.sh <generator> <output-dir> [--config FILE] [--spec URL-OR-FILE] [-- <extra generate arguments>]
 #
-# Environment
-#   SCORO_OPENAPI_SPEC      schema URL or local file (default: the public schema)
-#   OPENAPI_GENERATOR_ARGS  extra arguments for the generate command, for example
-#                           "--additional-properties=packageName=myscoro"
-#
-# Exit codes: 1 the generator failed, 2 usage or a missing prerequisite,
+# Exit codes: 1 the generator failed, 2 usage or openapi-generator not installed,
 # 3 the output directory is not safe to replace, 4 the schema is not readable.
 set -euo pipefail
 
 SCHEMA_URL="https://api.scoro.com/api/v4/reference/openapi"
 USER_AGENT="scoro-api-best-practices"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+pinned_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$here/openapitools.json" | head -n 1)
 
 fail() {
   local code=$1
@@ -24,23 +21,74 @@ fail() {
   exit "$code"
 }
 
-[ $# -ge 2 ] || fail 2 "usage: run.sh <generator> <output-dir> [config.json]"
-generator=$1
-out=$2
-config=${3:-}
+generator=""
+out=""
+config=""
+spec="$SCHEMA_URL"
+extra=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --spec)
+      [ $# -ge 2 ] || fail 2 "--spec needs a URL or a file path"
+      spec=$2
+      shift 2
+      ;;
+    --spec=*)
+      spec=${1#--spec=}
+      shift
+      ;;
+    --config)
+      [ $# -ge 2 ] || fail 2 "--config needs a file path"
+      config=$2
+      shift 2
+      ;;
+    --)
+      shift
+      extra=("$@")
+      break
+      ;;
+    -*)
+      fail 2 "unknown option $1"
+      ;;
+    *)
+      if [ -z "$generator" ]; then
+        generator=$1
+      elif [ -z "$out" ]; then
+        out=$1
+      else
+        fail 2 "unexpected argument $1"
+      fi
+      shift
+      ;;
+  esac
+done
+[ -n "$generator" ] && [ -n "$out" ] || fail 2 "usage: run.sh <generator> <output-dir> [--config FILE] [--spec URL-OR-FILE] [-- <extra generate arguments>]"
 
-# The npm wrapper needs Node 18+ to run and a Java 11+ runtime for the generator itself.
-command -v node >/dev/null 2>&1 || fail 2 "node is not installed. Install Node 18 or newer from https://nodejs.org and run again."
-node_major=$(node -p 'process.versions.node.split(".")[0]')
-[ "$node_major" -ge 18 ] || fail 2 "node $(node --version) is too old. Node 18 or newer is required."
-command -v java >/dev/null 2>&1 || fail 2 "java is not installed. Install a Java 11+ runtime (https://adoptium.net, or 'brew install openjdk') and run again."
-java_version=$(java -version 2>&1 | grep -m1 ' version ' | sed -E 's/.*"([^"]+)".*/\1/')
-[ -n "$java_version" ] || fail 2 "could not read the Java version from 'java -version'."
-java_major=${java_version%%.*}
-if [ "$java_major" = "1" ]; then
-  java_major=$(echo "$java_version" | cut -d. -f2)
+# Find an installed openapi-generator. The npm wrapper (openapi-generator-cli) takes
+# --openapitools, which pins the generator version it uses; Homebrew and PyPI installs
+# run the generator directly.
+tool=()
+if command -v openapi-generator >/dev/null 2>&1; then
+  tool=(openapi-generator)
+elif command -v openapi-generator-cli >/dev/null 2>&1; then
+  # Always pass the pinned config to the npm wrapper: without it the wrapper writes an
+  # openapitools.json into the current directory. The PyPI command rejects the option.
+  if openapi-generator-cli --openapitools "$here/openapitools.json" version >/dev/null 2>&1; then
+    tool=(openapi-generator-cli --openapitools "$here/openapitools.json")
+  else
+    tool=(openapi-generator-cli)
+  fi
+else
+  fail 2 "openapi-generator is not installed. Install version $pinned_version with one of:
+  brew install openapi-generator
+  npm install -g @openapitools/openapi-generator-cli && openapi-generator-cli version-manager set $pinned_version
+  pip install \"openapi-generator-cli[jdk4py]==$pinned_version\"
+It runs on Java 11+ (the pip variant bundles its own)."
 fi
-[ "$java_major" -ge 11 ] 2>/dev/null || fail 2 "java $java_version is too old. Java 11 or newer is required."
+installed_version=$("${tool[@]}" version 2>/dev/null | tail -n 1 | tr -d '[:space:]' || true)
+if [ "$installed_version" != "$pinned_version" ]; then
+  echo "warning: openapi-generator $installed_version found, this skill was verified with $pinned_version; output may differ." >&2
+fi
 
 # Output: earlier generated output is replaced; anything else is left alone.
 if [ -d "$out" ]; then
@@ -59,7 +107,6 @@ mkdir -p "$out"
 out="$(cd "$out" && pwd)"
 
 # Schema: a URL is downloaded once into a temporary file, a local file is used as is.
-spec="${SCORO_OPENAPI_SPEC:-$SCHEMA_URL}"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 case "$spec" in
@@ -74,8 +121,7 @@ case "$spec" in
     ;;
 esac
 
-cmd=(npx --yes @openapitools/openapi-generator-cli --openapitools "$here/openapitools.json"
-  generate -i "$spec" -g "$generator" -o "$out"
+cmd=("${tool[@]}" generate -i "$spec" -g "$generator" -o "$out"
   --openapi-normalizer KEEP_ONLY_FIRST_TAG_IN_OPERATION=true)
 if [ -n "$config" ]; then
   cmd+=(-c "$config")
@@ -83,10 +129,7 @@ fi
 if [ -d "$here/templates/$generator" ]; then
   cmd+=(-t "$here/templates/$generator")
 fi
-if [ -n "${OPENAPI_GENERATOR_ARGS:-}" ]; then
-  # shellcheck disable=SC2206 # word splitting is intended: the variable holds several arguments
-  cmd+=($OPENAPI_GENERATOR_ARGS)
-fi
+cmd+=(${extra[@]+"${extra[@]}"})
 
 echo "+ ${cmd[*]}" >&2
 "${cmd[@]}"
