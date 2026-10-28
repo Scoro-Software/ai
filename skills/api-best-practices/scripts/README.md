@@ -1,9 +1,17 @@
 # Scripts
 
-Starter scripts for working with the Scoro API v4 schema. Both run the official
-[openapi-generator](https://openapi-generator.tech) through its npm wrapper, so they need
-Node 18+ and a Java 11+ runtime. The pinned generator (7.26.0) is downloaded on first use into
-`~/.cache/openapi-generator-cli`; nothing is installed into your project.
+Starter scripts for working with the Scoro API v4 schema. Both run an installed
+[openapi-generator](https://openapi-generator.tech) and download nothing but the schema. Install
+the generator once, with any of these:
+
+```bash
+brew install openapi-generator
+npm install -g @openapitools/openapi-generator-cli && openapi-generator-cli version-manager set 7.26.0
+pip install "openapi-generator-cli[jdk4py]==7.26.0"
+```
+
+It runs on Java 11+ (the pip variant bundles its own). The scripts find `openapi-generator` or
+`openapi-generator-cli` on the PATH and print these install commands when neither is there.
 
 | Script | What it does |
 |---|---|
@@ -14,20 +22,29 @@ Both download the public schema, replace earlier generated output in the target 
 refuse to touch a directory they did not generate, and print what to do next. Ask the user
 which language they want before generating a client.
 
-## Environment
+## Options
 
-| Variable | Meaning |
+Both scripts take the same options after the positional arguments:
+
+| Option | Meaning |
 |---|---|
-| `SCORO_OPENAPI_SPEC` | Schema URL or local file. Default `https://api.scoro.com/api/v4/reference/openapi`. |
-| `OPENAPI_GENERATOR_ARGS` | Extra arguments for `openapi-generator generate`, for example `--additional-properties=packageName=myscoro` or `--global-property apiDocs=true,modelDocs=true`. |
+| `--spec URL-OR-FILE` | Schema to generate from. Default `https://api.scoro.com/api/v4/reference/openapi`; a local file works offline. |
+| `-- <arguments>` | Everything after `--` is passed to `openapi-generator generate`, for example `-- --additional-properties=packageName=myscoro` or `-- --global-property apiDocs=true,modelDocs=true`. |
+
+```bash
+scripts/generate-client.sh python ./scoro-api-client-python --spec ./openapi.json
+scripts/generate-client.sh go -- --git-user-id myorg --git-repo-id scoro-api
+```
+
+The scripts read no environment variables and send nothing but the schema request.
 
 Exit codes: `1` the generator failed, `2` usage or a missing prerequisite, `3` the output
 directory holds something that was not generated, `4` the schema could not be read.
 
 ## Starter configs
 
-`openapi-generator/<generator>.json` is passed to the generator with `-c`. Edit the file or
-override single values through `OPENAPI_GENERATOR_ARGS`.
+`openapi-generator/<generator>.json` is passed to the generator with `-c`. Edit the file, or
+override single values with arguments after `--`.
 
 Common to all four:
 
@@ -52,9 +69,12 @@ operation always lands in exactly one API class.
 
 ## Pinned generator version
 
-`openapi-generator/openapitools.json` pins openapi-generator 7.26.0. OpenAPI 3.1 support in the
-generator is still marked beta, and the schema is 3.1, so the generator prints a note about it
-on every run; the schema validates cleanly. When bumping the version, regenerate every client,
-and compare `openapi-generator/templates/markdown/api.mustache` with the new version's
+The skill was verified with openapi-generator 7.26.0. `openapi-generator/openapitools.json`
+records that version: the npm wrapper reads it and uses exactly that generator, and the scripts
+warn when another install reports a different version, because the generated output may then
+differ from what the skill documents. OpenAPI 3.1 support in the generator is still marked
+beta, and the schema is 3.1, so the generator prints a note about it on every run; the schema
+validates cleanly. When bumping the version, regenerate every client, and compare
+`openapi-generator/templates/markdown/api.mustache` with the new version's
 `markdown-documentation/api.mustache`: the file is that template plus two lines per operation,
 the HTTP method with the path and the required scopes.

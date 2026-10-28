@@ -24,7 +24,7 @@ Scope format is `{resource}:{level}` with `r` (read) < `rw` (read + write) < `rw
 
 The API conforms fully to **OpenAPI 3.1**. The schema is always current at `https://api.scoro.com/api/v4/reference/openapi`, and `https://api.scoro.com/api/v4/reference` renders it as browsable docs with a try-it console.
 
-Generate a typed client before writing any request code: it carries the exact paths, field names, enums and required fields, so most of the mistakes this skill warns about become compile-time errors. The skill ships starter scripts for this in `scripts/` next to `SKILL.md`. They run [openapi-generator](https://openapi-generator.tech) 7.26.0 through `npx`, so they need Node 18+ and Java 11+. **Ask the user which language they want first**, then run:
+Generate a typed client before writing any request code: it carries the exact paths, field names, enums and required fields, so most of the mistakes this skill warns about become compile-time errors. The skill ships starter scripts for this in `scripts/` next to `SKILL.md`. They run an installed [openapi-generator](https://openapi-generator.tech) (verified with 7.26.0; `brew install openapi-generator`, or the npm or pip package, see `scripts/README.md`) and download nothing but the schema. **Ask the user which language they want first**, then run:
 
 ```bash
 scripts/generate-client.sh typescript-fetch   # or python, go, php: these four get a starter config
@@ -32,7 +32,7 @@ scripts/generate-client.sh java               # any other openapi-generator name
 scripts/generate-docs.sh                      # markdown reference: one file per resource and per model
 ```
 
-Output lands in `./scoro-api-client-<generator>` or `./scoro-api-docs`; pass a second argument for another directory. `scripts/README.md` explains the options and environment variables. The generated Go module still has a placeholder module path: set it in `go.mod`, or pass `OPENAPI_GENERATOR_ARGS="--git-user-id myorg --git-repo-id scoro-api"`.
+Output lands in `./scoro-api-client-<generator>` or `./scoro-api-docs`; pass a second argument for another directory, `--spec` for a local copy of the schema, and anything after `--` goes to the generator (see `scripts/README.md`). The generated Go module still has a placeholder module path: set it in `go.mod`, or pass `-- --git-user-id myorg --git-repo-id scoro-api`.
 
 ### Configure the generated client
 
