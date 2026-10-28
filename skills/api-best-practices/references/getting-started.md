@@ -24,17 +24,117 @@ Scope format is `{resource}:{level}` with `r` (read) < `rw` (read + write) < `rw
 
 The API conforms fully to **OpenAPI 3.1**. The schema is always current at `https://api.scoro.com/api/v4/reference/openapi`, and `https://api.scoro.com/api/v4/reference` renders it as browsable docs with a try-it console.
 
-Generate a typed client in your language with [openapi-generator](https://github.com/openapitools/openapi-generator) before writing any request code. The generated client carries the exact paths, field names, enums and required fields, so most of the mistakes this skill warns about become compile-time errors. Use a recent generator release (7.x or newer) for OpenAPI 3.1 support.
+Generate a typed client before writing any request code: it carries the exact paths, field names, enums and required fields, so most of the mistakes this skill warns about become compile-time errors. The skill ships starter scripts for this in `scripts/` next to `SKILL.md`. They run [openapi-generator](https://openapi-generator.tech) 7.26.0 through `npx`, so they need Node 18+ and Java 11+. **Ask the user which language they want first**, then run:
 
 ```bash
-# TypeScript example — swap -g for python, java, csharp, go, php, kotlin, ruby, ...
-npx @openapitools/openapi-generator-cli generate \
-  -i https://api.scoro.com/api/v4/reference/openapi \
-  -g typescript-fetch \
-  -o ./scoro-client
+scripts/generate-client.sh typescript-fetch   # or python, go, php: these four get a starter config
+scripts/generate-client.sh java               # any other openapi-generator name runs with its defaults
+scripts/generate-docs.sh                      # markdown reference: one file per resource and per model
 ```
 
-Configure the generated client with the site base URL, the bearer token, and (on multi-account sites) the `Scoro-Company-Account` header. Everything else in this skill — pagination, status codes, line upserts, booking units — still applies; the client only guarantees the shapes, not the semantics.
+Output lands in `./scoro-api-client-<generator>` or `./scoro-api-docs`; pass a second argument for another directory. `scripts/README.md` explains the options and environment variables. The generated Go module still has a placeholder module path: set it in `go.mod`, or pass `OPENAPI_GENERATOR_ARGS="--git-user-id myorg --git-repo-id scoro-api"`.
+
+### Configure the generated client
+
+- **The base URL is the bare site host**, `https://{yoursite}.scoro.com`. The generated paths already contain `/api/v4`; a base URL ending in `/api/v4` sends every request to `/api/v4/api/v4/...`.
+- **Bearer token:** every operation is marked OAuth2 in the schema, so each client has a token setting. The TypeScript client sends `accessToken` as-is, so include the `Bearer ` prefix there; Python, Go and PHP add it.
+- **`Scoro-Company-Account`** is declared as an optional header parameter on every operation, so every generated method accepts it. Set it once as a default header instead of passing it per call.
+- The TypeScript client names the `File` model `ModelFile`, because `File` is a built-in type.
+
+```ts
+// typescript-fetch
+import { Configuration, TasksApi } from 'scoro-api-client'; // after: npm install ./scoro-api-client-typescript-fetch
+const tasks = new TasksApi(new Configuration({
+  basePath: 'https://mycompany.scoro.com',
+  accessToken: async () => `Bearer ${await getFreshToken()}`,
+  headers: { 'Scoro-Company-Account': 'mycompany' },
+}));
+```
+
+```python
+# python
+import scoro_api
+config = scoro_api.Configuration(host="https://mycompany.scoro.com", access_token=token)
+client = scoro_api.ApiClient(config)
+client.set_default_header("Scoro-Company-Account", "mycompany")
+tasks = scoro_api.TasksApi(client)
+```
+
+```go
+// go
+cfg := scoroapi.NewConfiguration()
+cfg.Servers = scoroapi.ServerConfigurations{{URL: "https://mycompany.scoro.com"}}
+cfg.AddDefaultHeader("Scoro-Company-Account", "mycompany")
+client := scoroapi.NewAPIClient(cfg)
+ctx := context.WithValue(context.Background(), scoroapi.ContextOAuth2,
+    oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+```
+
+```php
+// php
+$config = (new \Scoro\Api\Configuration())->setHost('https://mycompany.scoro.com')->setAccessToken($token);
+$http = new \GuzzleHttp\Client(['headers' => ['Scoro-Company-Account' => 'mycompany']]);
+$tasks = new \Scoro\Api\Api\TasksApi($http, $config);
+```
+
+### Filters in generated clients
+
+List endpoints take `filters` as a deep-object query parameter, and the API expects bracket syntax: `filters[ids][]=1&filters[ids][]=2`, `filters[createdDateTime][from]=...`, `filters[customFields][c_region]=north` (see `references/conventions.md`). Numeric indexes such as `filters[ids][0]=1` are accepted too. Generators encode this differently, so after generating, make one list call with an array filter and look at the URL that goes out. Observed with openapi-generator 7.26.0:
+
+| Generator | Sends for `ids: [101, 102]` | Fix |
+|---|---|---|
+| `typescript-fetch` | `filters[ids]=101&filters[ids]=102`: the key repeats without `[]`, and a PHP-style query parser keeps only the last value, so one id gets through. Ranges, booleans and custom fields are correct. | Pass a `queryParamsStringify` that appends `[]` to array keys (below). |
+| `python` | `filters={"ids": [101, 102], ...}`: the whole object JSON-encoded, which the API does not understand. | Subclass `ApiClient` and flatten nested dicts and lists in `parameters_to_url_query` (below). |
+| `go` | `filters[ids][0]=101&filters[ids][1]=102`; ranges and booleans correct. | None. |
+| `php` | From reading the generated code, not from running it: a plain associative array is flattened correctly with numeric indexes, a `TaskFilter` model object is not, and nested booleans are sent empty. | Pass filters as a plain array with string booleans: `['ids' => [101, 102], 'isDone' => 'false']`. |
+
+```ts
+// typescript-fetch: query stringifier that produces filters[key][]=value for arrays
+import { Configuration, HTTPQuery } from 'scoro-api-client';
+
+function scoroQuery(params: HTTPQuery, prefix = ''): string {
+  return Object.keys(params).map((key) => {
+    const fullKey = prefix ? `${prefix}[${key}]` : key;
+    const value = params[key];
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.map((v) => `${encodeURIComponent(`${fullKey}[]`)}=${encodeURIComponent(String(v))}`).join('&');
+    if (value instanceof Date) return `${encodeURIComponent(fullKey)}=${encodeURIComponent(value.toISOString())}`;
+    if (typeof value === 'object') return scoroQuery(value as HTTPQuery, fullKey);
+    return `${encodeURIComponent(fullKey)}=${encodeURIComponent(String(value))}`;
+  }).filter((part) => part.length > 0).join('&');
+}
+
+const config = new Configuration({ basePath: '...', accessToken: '...', queryParamsStringify: scoroQuery });
+```
+
+```python
+# python: ApiClient that sends filters[...] in the bracket form the API expects
+class ScoroApiClient(scoro_api.ApiClient):
+    def parameters_to_url_query(self, params, collection_formats):
+        flat = []
+
+        def add(key, value):
+            if isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    add(f"{key}[{sub_key}]", sub_value)
+            elif isinstance(value, (list, tuple)):
+                for item in value:
+                    add(f"{key}[]", item)
+            elif value is not None:
+                flat.append((key, value))
+
+        items = params.items() if isinstance(params, dict) else params
+        for key, value in items:
+            if key in collection_formats:  # sort and other comma-joined lists stay as they are
+                flat.append((key, value))
+            else:
+                add(key, value)
+        return super().parameters_to_url_query(flat, collection_formats)
+
+client = ScoroApiClient(config)
+```
+
+Success looks like a `200` whose items match the filter. An unfiltered page, or a `400`, means the encoding is still wrong. File upload endpoints accept either multipart form data or a JSON body naming a URL; check which variant the generated method exposes before uploading. Everything else in this skill (pagination, status codes, line upserts, booking units) still applies: the client guarantees the shapes, not the semantics.
 
 ## Getting a token
 

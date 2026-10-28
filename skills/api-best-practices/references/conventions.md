@@ -69,6 +69,7 @@ Rules worth knowing:
 
 - **Text filters are partial matches.** `name`, `description`, `companyName`, `registrationCode` and similar use a contains-match. Compare the exact value in the response before treating a result as a match.
 - **Datetime filters need an offset.** `2026-01-01T00:00:00Z` or `...+02:00` works. A bare `2026-01-01T00:00:00`, or a date-only value in a datetime filter, returns `400 FilterDeserializeException`.
+- **Generated clients must emit this bracket syntax.** With openapi-generator 7.26 the TypeScript client repeats the key without `[]` and the Python client JSON-encodes the object; Go and a plain PHP array work. Run the check in `references/getting-started.md` before relying on filters.
 - **Deleted records are excluded by default.** Lists return only live records unless you pass `filters[isDeleted]=true`.
 - **Saved views:** `filters[bookmarkId]=<id>` or `filters[bookmarkHash]=<bh_ segment of a Scoro list URL>` applies a saved list view. Explicit filters override the bookmark's values. The two bookmark keys cannot be combined.
 
@@ -210,6 +211,7 @@ Scopes are `{resource}:{level}`. Levels are cumulative: `rwd` includes `rw`, whi
 
 Rules that trip people up:
 
+- **The schema names the scope of every operation.** Each operation's `security` entry lists the scope it needs; some accept either of two. Derive an integration's scope list from the endpoints it calls: collect their scopes, keep the highest level per resource, and request exactly those. A client generated with `scripts/generate-client.sh` and the docs from `scripts/generate-docs.sh` carry the same scopes, but show only the first alternative, so the schema stays the source of truth.
 - **Resource names are not URL segments.** Companies and persons are both `contacts:*`. Time entries are under `tasks:*`. Payment allocations and `mark-paid` are under `invoice-payments:*`. Check the `security` entry of each operation in the OpenAPI schema (`https://api.scoro.com/api/v4/reference/openapi`).
 - **Scope is per endpoint, not per HTTP verb.** `POST /invoices/{id}/mark-paid` needs `invoice-payments:rw`, not `invoices:rw`. Comment and file sub-resources accept either `comments:*`/`files:*` or the parent resource's scope.
 - **`base:r` is granted automatically** with any granular scope — you don't request it. It covers reference data: `/users/me`, `/users/search`, `/statuses`, `/tax-rates`, `/currencies`, `/roles`, `/tags`, `/units` and `/{module}/custom-fields`.

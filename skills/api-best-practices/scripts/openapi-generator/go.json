@@ -1,0 +1,20 @@
+{
+  "packageName": "scoroapi",
+  "packageVersion": "4.0.0",
+  "generateInterfaces": true,
+  "enumClassPrefix": true,
+  "structPrefix": true,
+  "useOneOfDiscriminatorLookup": true,
+  "withGoMod": true,
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "hideGenerationTimestamp": true,
+  "globalProperties": {
+    "apiTests": "false",
+    "modelTests": "false",
+    "apiDocs": "false",
+    "modelDocs": "false"
+  },
+  "inlineSchemaNameMappings": {
+    "createCompanyComment_201_response": "CreatedId"
+  }
+}

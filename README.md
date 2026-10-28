@@ -18,6 +18,8 @@ claude plugin install scoro@scoro-ai
 
 Then invoke the API skill with `/scoro:api-best-practices` in any session.
 
+The API skill ships starter scripts that generate a typed client or an endpoint reference from the public OpenAPI schema with openapi-generator; they need Node 18+ and Java 11+ (see [`skills/api-best-practices/scripts/README.md`](./skills/api-best-practices/scripts/README.md)).
+
 For Cursor, Copilot, Windsurf, or any other agent, see [`skills/README.md`](./skills/README.md) — those platforms don't support Claude plugins, so the skills install there by file copy or raw-URL reference.
 
 ## Getting started

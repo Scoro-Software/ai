@@ -1,0 +1,17 @@
+{
+  "invokerPackage": "Scoro\\Api",
+  "packageName": "ScoroApi",
+  "composerPackageName": "scoro/api-client",
+  "artifactVersion": "4.0.0",
+  "disallowAdditionalPropertiesIfNotPresent": false,
+  "hideGenerationTimestamp": true,
+  "globalProperties": {
+    "apiTests": "false",
+    "modelTests": "false",
+    "apiDocs": "false",
+    "modelDocs": "false"
+  },
+  "inlineSchemaNameMappings": {
+    "createCompanyComment_201_response": "CreatedId"
+  }
+}

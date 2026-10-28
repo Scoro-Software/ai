@@ -7,3 +7,7 @@
 
 # Local Claude Code state (per-user permissions, worktrees)
 .claude/
+
+# Output of the skill's generator scripts when run from the repository root
+scoro-api-client-*/
+scoro-api-docs/
