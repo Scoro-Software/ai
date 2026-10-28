@@ -12,7 +12,10 @@ Agent skills that give AI coding assistants accurate, up-to-date guidance on wor
 
 ### Claude Code
 
+**As a plugin.** The whole repo is a Claude Code plugin. Register it as a marketplace once, then install:
+
 ```bash
+claude plugin marketplace add Scoro-Software/ai
 claude plugin install scoro@scoro-ai
 ```
 
