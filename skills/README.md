@@ -6,7 +6,7 @@ Agent skills that give AI coding assistants accurate, up-to-date guidance on wor
 
 | Skill | Description | Status |
 |---|---|---|
-| [api-best-practices](./api-best-practices/) | Scoro API v4 best practices — auth, conventions, data model, CRM sync, finance, resource planning, time tracking, v2→v4 migration, and starter scripts that generate a typed client or a markdown endpoint reference with openapi-generator | ✅ Available |
+| [api-best-practices](./api-best-practices/) | Scoro API v4 best practices — Developer Portal app registration, auth, conventions, data model, CRM sync, finance, resource planning, time tracking, v2→v4 migration, and starter scripts that generate a typed client or a markdown endpoint reference with openapi-generator | ✅ Available |
 
 ## Installation
 

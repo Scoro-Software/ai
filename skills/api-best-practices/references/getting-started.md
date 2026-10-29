@@ -11,12 +11,12 @@
 
 ## Registering a Developer Portal app
 
-Register at [developers.scoro.com](https://developers.scoro.com).
+Register at [developers.scoro.com](https://developers.scoro.com) (Google or Microsoft sign-in). The full walkthrough, every option on the form and the publishing flow are in `references/developer-portal.md`. The short version:
 
-- **Private apps** are tied to specific Scoro sites and work without review — use for internal integrations and development.
-- **Public apps** (for distribution to other Scoro customers) require Scoro review before they work on sites you don't own.
-- Select the scopes your integration needs. A token can never hold more than the app's configured scopes — requesting more is silently narrowed to what is configured. `base:r` (reference data such as statuses, tax rates and `/users/me`) is added to every token automatically. In production, always request least-privilege scopes.
-- The **client secret is shown once** at creation — copy it immediately. If lost, rotate it from the portal.
+- Choose the **OAuth** (API v4) authentication type and, to start, the **Private** app type: private apps work without review on up to 3 Scoro sites you list. **Public** apps are reviewed by Scoro and then listed in the App Store for every customer.
+- Add at least one **callback URL** (your `redirect_uri`, matched exactly) and one **site URL** (`https://{yoursite}.scoro.com`).
+- Set the **access** (scopes) explicitly. A token can never hold more than the app's configured scopes — requesting more is silently narrowed to what is configured. `base:r` (reference data such as statuses, tax rates and `/users/me`) is added to every token automatically. In production, always request least-privilege scopes.
+- Save, then **Generate OAuth credentials**. The **client secret is shown once** — copy it immediately; if lost, rotate it from the portal with a grace period. The `client_id` is the **OAuth Client ID** on that card, not the App ID in the header.
 
 Scope format is `{resource}:{level}` with `r` (read) < `rw` (read + write) < `rwd` (read + write + delete). Resource names do not always match URL paths — companies and persons are `contacts:*`, time entries are `tasks:*`. See `references/conventions.md`.
 
@@ -138,10 +138,10 @@ Success looks like a `200` whose items match the filter. An unfiltered page, or 
 
 ## Getting a token
 
-Developer Portal apps use **OAuth 2.0 authorization code flow with PKCE** — a browser sign-in is required to obtain the first token.
+Developer Portal apps use **OAuth 2.0 authorization code flow with PKCE** — a browser sign-in is required to obtain the first token. The client credentials grant is not available to partner apps.
 
 Flow:
-1. Build the authorization URL with your `client_id`, `redirect_uri`, PKCE `code_challenge`, and requested `scope`. Include `offline_access` in scope to receive a refresh token.
+1. Build the authorization URL, `https://{yoursite}.scoro.com/auth/oauth/authorize`, with your `client_id` (the OAuth Client ID from the app's Setup tab), `redirect_uri` (one of the app's callback URLs, matched exactly), PKCE `code_challenge`, and requested `scope`. Include `offline_access` in scope to receive a refresh token. The user who signs in must belong to one of the app's site URLs.
 2. Open the URL in a browser. The user signs in and approves the scopes.
 3. Exchange the returned `code` for tokens using `POST https://{yoursite}.scoro.com/auth/oauth/token` with `grant_type=authorization_code` and your `code_verifier`.
 
@@ -165,7 +165,7 @@ grant_type=refresh_token
 &refresh_token=<your_refresh_token>
 ```
 
-`client_secret` is for confidential clients; a public (PKCE-only) client omits it.
+Developer Portal apps always receive a client secret, so send it. Only a public (PKCE-only) client without a secret would omit it.
 
 Store the `access_token` and `refresh_token` from every response and use the latest refresh token next time. Refreshing extends the refresh token's lifetime. Do **not** send `scope` on a refresh request: a refresh that names scopes is narrowed to those scopes, and nothing but a new authorization can widen a grant.
 
@@ -199,6 +199,7 @@ Scoro-Company-Account: mycompany
 
 - **Status fields expect a code string, not a numeric ID.** The `status` field on tasks, projects, quotes, orders and purchase orders takes the status `code` value from `GET /statuses` (e.g. `"active"`, `"won"`), not the numeric `id`. The spec describes the field as a "status ID", which is misleading — always read statuses first.
 - **The first token needs a browser.** Headless integrations still require a one-time sign-in. Automate token refresh with `offline_access` after the initial authorization.
-- **Client secret shown once.** There is no way to retrieve it after initial creation. Rotate it from the Developer Portal if lost.
+- **Client secret shown once.** There is no way to retrieve it after initial creation. Rotate it from the Developer Portal if lost; rotation keeps the old secret valid for a grace period you choose (immediately, 1 hour, 24 hours or 7 days).
+- **App ID is not `client_id`.** Use the OAuth Client ID shown after generating credentials; the App ID only identifies the portal record.
 - **Scope changes require re-authorization.** Adding a scope to the app's configuration does not add it to existing tokens — the user must go through the OAuth flow again. Removing a scope takes effect on the next refresh.
 - **Omit `scope` when refreshing.** A refresh request that lists scopes gets only those scopes.

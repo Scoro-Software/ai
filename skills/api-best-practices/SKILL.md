@@ -7,7 +7,7 @@ description: "Use whenever code or a task reads or writes Scoro data through its
 
 **Base URL:** `https://{yoursite}.scoro.com/api/v4` — replace `{yoursite}` with your Scoro subdomain.
 
-**Auth:** OAuth 2.0 Bearer token — `Authorization: Bearer <token>`. See `references/getting-started.md`.
+**Auth:** OAuth 2.0 Bearer token — `Authorization: Bearer <token>`. The client ID, secret, callback URLs, site URLs and scopes come from an app registered in the Developer Portal: `references/developer-portal.md`. Token flow: `references/getting-started.md`.
 
 **Schema and docs:** The API conforms fully to **OpenAPI 3.1**. The current schema is at `https://api.scoro.com/api/v4/reference/openapi` and the browsable reference is at `https://api.scoro.com/api/v4/reference`. **Strongly recommended:** generate a typed client from that schema with `scripts/generate-client.sh <generator>` (ask the user which language first) instead of hand-writing request code — it gives you exact paths, field names, enums and request bodies. When this skill and the schema disagree, the schema wins. If the schema cannot be fetched from this environment (no network access), ask the user to download it from that URL and attach it, then pass it to the scripts with `--spec ./openapi.json`; never fall back to paths or field names from memory.
 
@@ -21,6 +21,7 @@ description: "Use whenever code or a task reads or writes Scoro data through its
 
 | Use case | Reference |
 |---|---|
+| Registering a Developer Portal app: app type, callback and site URLs, scopes, client ID and secret, publishing to the App Store | `references/developer-portal.md` |
 | Auth setup, first API call | `references/getting-started.md` |
 | Paging, sorting, filters, writes, lines, errors, rate limits, scopes, webhooks | `references/conventions.md` |
 | Creating linked objects in the right order | `references/data-model.md` |
