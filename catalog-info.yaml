@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ai
+  title: Scoro AI
+  description: Claude Code plugin and agent skills that teach AI coding assistants how to use Scoro APIs, installed from the scoro-ai plugin marketplace.
+  annotations:
+    github.com/project-slug: Scoro-Software/ai
+  tags:
+    - open-source
+    - ai
+    - claude-code
+spec:
+  type: library
+  lifecycle: production
+  owner: group:default/platform-team
