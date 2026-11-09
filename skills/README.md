@@ -6,7 +6,7 @@ Agent skills that give AI coding assistants accurate, up-to-date guidance on wor
 
 | Skill | Description | Status |
 |---|---|---|
-| [api-best-practices](./api-best-practices/) | Scoro API v4 best practices — Developer Portal app registration, auth, conventions, data model, CRM sync, finance, resource planning, time tracking, v2→v4 migration, and starter scripts that generate a typed client or a markdown endpoint reference with openapi-generator | ✅ Available |
+| [api-best-practices](./api-best-practices/) | Scoro API v4 best practices — Developer Portal app registration, auth, conventions, data model, CRM sync, finance, resource planning, time tracking, v2→v4 migration, and openapi-generator starter configs for a typed client or a markdown endpoint reference | ✅ Available |
 
 ## Installation
 
@@ -21,7 +21,7 @@ claude plugin install scoro@scoro-ai
 
 Claude loads the API skill on its own when a task touches the Scoro API; you can also invoke it with `/scoro:api-best-practices`. Reference guides in `references/` are opened by the agent on demand.
 
-The skill's `scripts/` folder holds starter scripts that generate a typed client (`generate-client.sh <generator>`) or a browsable endpoint reference (`generate-docs.sh`) from the public OpenAPI schema with openapi-generator. They need openapi-generator installed (Homebrew, npm or pip; Java 11+); see [`api-best-practices/scripts/README.md`](./api-best-practices/scripts/README.md). Installs that only reference `SKILL.md` by URL can still read the schema at `https://api.scoro.com/api/v4/reference/openapi` directly.
+The skill's `openapi-generator/` folder holds starter configs for generating a typed client (TypeScript, Python, Go, PHP) or a browsable endpoint reference from the public OpenAPI schema with openapi-generator. It needs openapi-generator installed (Homebrew, npm or pip; Java 11+); the commands are in [`api-best-practices/openapi-generator/README.md`](./api-best-practices/openapi-generator/README.md). Installs that only reference `SKILL.md` by URL can still read the schema at `https://api.scoro.com/api/v4/reference/openapi` directly.
 
 ### Cursor
 
@@ -45,7 +45,7 @@ Add to `.github/copilot-instructions.md`:
 When writing code that calls the Scoro API, follow the guidance in `skills/api-best-practices/SKILL.md` and the relevant file in `skills/api-best-practices/references/`.
 ```
 
-Then commit the whole `skills/api-best-practices/` folder, including `scripts/`, to your repo so Copilot can reference the files.
+Then commit the whole `skills/api-best-practices/` folder, including `openapi-generator/`, to your repo so Copilot can reference the files.
 
 ### Windsurf
 

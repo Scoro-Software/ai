@@ -19,7 +19,7 @@ claude plugin install scoro@scoro-ai
 
 Claude then loads the API skill on its own when a task touches the Scoro API, or you can invoke it with `/scoro:api-best-practices`.
 
-The API skill ships starter scripts that generate a typed client or an endpoint reference from the public OpenAPI schema with openapi-generator; they need openapi-generator installed (see [`skills/api-best-practices/scripts/README.md`](./skills/api-best-practices/scripts/README.md)).
+The API skill ships starter configs for generating a typed client or an endpoint reference from the public OpenAPI schema with openapi-generator; it needs openapi-generator installed (see [`skills/api-best-practices/openapi-generator/README.md`](./skills/api-best-practices/openapi-generator/README.md)).
 
 For Cursor, Copilot, Windsurf, or any other agent, see [`skills/README.md`](./skills/README.md) — those platforms don't support Claude plugins, so the skills install there by file copy or raw-URL reference.
 
