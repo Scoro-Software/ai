@@ -10,11 +10,11 @@ AI tooling for building on Scoro — skills, agents, and integrations for AI cod
 
 ## Install in Claude Code
 
-This repo is a Claude Code plugin that bundles every skill under `skills/`. Register it as a marketplace once, then install:
+This repo is a Claude Code plugin that bundles every skill under `skills/`. Add it from the [Claude plugin directory](https://claude.ai/directory) on claude.ai; it then loads in your Claude Code sessions too. To try a clone for one session instead:
 
 ```bash
-claude plugin marketplace add Scoro-Software/ai
-claude plugin install scoro@scoro-ai
+git clone https://github.com/Scoro-Software/ai.git
+claude --plugin-dir ./ai
 ```
 
 Claude then loads the API skill on its own when a task touches the Scoro API, or you can invoke it with `/scoro:api-best-practices`.

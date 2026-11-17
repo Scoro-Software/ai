@@ -3,7 +3,7 @@ kind: Component
 metadata:
   name: ai
   title: Scoro AI
-  description: Claude Code plugin and agent skills that teach AI coding assistants how to use Scoro APIs, installed from the scoro-ai plugin marketplace.
+  description: Claude Code plugin and agent skills that teach AI coding assistants how to use Scoro APIs.
   annotations:
     github.com/project-slug: Scoro-Software/ai
   tags:
