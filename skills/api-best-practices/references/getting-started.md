@@ -24,7 +24,7 @@ Scope format is `{resource}:{level}` with `r` (read) < `rw` (read + write) < `rw
 
 The API conforms fully to **OpenAPI 3.1**. The schema is always current at `https://api.scoro.com/api/v4/reference/openapi`, and `https://api.scoro.com/api/v4/reference` renders it as browsable docs with a try-it console.
 
-Generate a typed client before writing any request code: it carries the exact paths, field names, enums and required fields, so most of the mistakes this skill warns about become compile-time errors. Use an installed [openapi-generator](https://openapi-generator.tech) (verified with 7.26.0; `brew install openapi-generator`, or the npm or pip package) with the starter configs in `openapi-generator/` next to `SKILL.md`. **Ask the user which language they want first**, then run:
+Generate a typed client before writing any request code: it carries the exact paths, field names, enums and required fields, so most of the mistakes this skill warns about become compile-time errors. Use an installed [openapi-generator](https://openapi-generator.tech) (verified with 7.26.0; see its [installation guide](https://openapi-generator.tech/docs/installation)) with the starter configs in `openapi-generator/` next to `SKILL.md`. **Ask the user which language they want first**, then run:
 
 ```bash
 SPEC=https://api.scoro.com/api/v4/reference/openapi
@@ -43,23 +43,23 @@ openapi-generator generate -i "$SPEC" -g markdown \
   --openapi-normalizer KEEP_ONLY_FIRST_TAG_IN_OPERATION=true -o ./scoro-api-docs
 ```
 
-Generate into a dedicated empty directory, never a project root. Offline, pass a downloaded copy of the schema to `-i` instead of the URL. The generated Go module still has a placeholder module path unless you pass `--git-user-id myorg --git-repo-id scoro-api`. The full command list and what each starter config sets are in `openapi-generator/README.md`.
+Generate into a dedicated empty directory, never a project root. Offline, pass a downloaded copy of the schema to `-i` instead of the URL. The generated Go module has a placeholder module path; `openapi-generator/README.md` has the generator flags that set it, the full command list and what each starter config sets.
 
 ### Configure the generated client
 
-In every sample below, `accessToken` is the `access_token` value returned by the Scoro OAuth token endpoint (see "Getting a token" and "Refreshing the token"), held in memory by your application after the user signs in. The samples do not read credentials from environment variables, config files or the keychain, and the token is only ever sent to the user's own Scoro site at `https://{yoursite}.scoro.com`. Where your application keeps the token between runs is your decision; follow the Developer Portal's security guidance and never log or commit it.
+In every sample below, `YOUR_API_KEY` is a placeholder for the `access_token` value returned by the Scoro OAuth token endpoint (see "Getting a token" and "Refreshing the token"). Replace it with the token your application received after the user signed in. The token is only ever sent to the user's own Scoro site at `https://{yoursite}.scoro.com`; never log or commit a real one.
 
 - **The base URL is the bare site host**, `https://{yoursite}.scoro.com`. The generated paths already contain `/api/v4`; a base URL ending in `/api/v4` sends every request to `/api/v4/api/v4/...`.
-- **Bearer token:** every operation is marked OAuth2 in the schema, so each client has a token setting. The TypeScript client sends `accessToken` as-is, so include the `Bearer ` prefix there; Python, Go and PHP add it.
+- **Bearer token:** every operation is marked OAuth2 in the schema, so each client has a token setting. The TypeScript client sends the token as-is, so include the `Bearer ` prefix there; Python, Go and PHP add it.
 - **`Scoro-Company-Account`** is declared as an optional header parameter on every operation, so every generated method accepts it. Set it once as a default header instead of passing it per call.
 - The TypeScript client names the `File` model `ModelFile`, because `File` is a built-in type.
 
 ```ts
 // typescript-fetch
-import { Configuration, TasksApi } from 'scoro-api-client'; // the generated package, added to the project as a local dependency
+import { Configuration, TasksApi } from 'scoro-api-client'; // the generated package
 const tasks = new TasksApi(new Configuration({
   basePath: 'https://mycompany.scoro.com',
-  accessToken: async () => `Bearer ${await oauth.currentAccessToken()}`, // access_token from the OAuth token response
+  accessToken: 'Bearer YOUR_API_KEY', // or an async function that returns the current token, Bearer prefix included
   headers: { 'Scoro-Company-Account': 'mycompany' },
 }));
 ```
@@ -67,7 +67,7 @@ const tasks = new TasksApi(new Configuration({
 ```python
 # python
 import scoro_api
-config = scoro_api.Configuration(host="https://mycompany.scoro.com", access_token=access_token)  # from the OAuth token response
+config = scoro_api.Configuration(host="https://mycompany.scoro.com", access_token="YOUR_API_KEY")
 client = scoro_api.ApiClient(config)
 client.set_default_header("Scoro-Company-Account", "mycompany")
 tasks = scoro_api.TasksApi(client)
@@ -80,12 +80,12 @@ cfg.Servers = scoroapi.ServerConfigurations{{URL: "https://mycompany.scoro.com"}
 cfg.AddDefaultHeader("Scoro-Company-Account", "mycompany")
 client := scoroapi.NewAPIClient(cfg)
 ctx := context.WithValue(context.Background(), scoroapi.ContextOAuth2,
-    oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})) // from the OAuth token response
+    oauth2.StaticTokenSource(&oauth2.Token{AccessToken: "YOUR_API_KEY"}))
 ```
 
 ```php
 // php
-$config = (new \Scoro\Api\Configuration())->setHost('https://mycompany.scoro.com')->setAccessToken($accessToken); // from the OAuth token response
+$config = (new \Scoro\Api\Configuration())->setHost('https://mycompany.scoro.com')->setAccessToken('YOUR_API_KEY');
 $http = new \GuzzleHttp\Client(['headers' => ['Scoro-Company-Account' => 'mycompany']]);
 $tasks = new \Scoro\Api\Api\TasksApi($http, $config);
 ```
@@ -103,7 +103,7 @@ List endpoints take `filters` as a deep-object query parameter, and the API expe
 
 ```ts
 // typescript-fetch: query stringifier that produces filters[key][]=value for arrays
-import { Configuration, HTTPQuery } from 'scoro-api-client';
+// Configuration and HTTPQuery are exported by the generated client
 
 function scoroQuery(params: HTTPQuery, prefix = ''): string {
   return Object.keys(params).map((key) => {
@@ -159,7 +159,7 @@ Flow:
 3. Exchange the returned `code` for tokens using `POST https://{yoursite}.scoro.com/auth/oauth/token` with `grant_type=authorization_code` and your `code_verifier`.
 
 The response contains:
-- `access_token` — include in every API request as `Authorization: Bearer <access_token>`
+- `access_token` — include in every API request as `Authorization: Bearer YOUR_API_KEY`
 - `refresh_token` — use this to get new tokens without a browser (requires `offline_access` scope)
 - `expires_in` — access token lifetime in seconds. Access tokens are short-lived; use this value rather than assuming a lifetime.
 - `scope` — the scopes actually granted. Compare it with what you requested.
@@ -173,9 +173,9 @@ POST https://{yoursite}.scoro.com/auth/oauth/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=refresh_token
-&client_id=<your_client_id>
-&client_secret=<your_client_secret>
-&refresh_token=<your_refresh_token>
+&client_id=YOUR_CLIENT_ID
+&client_secret=YOUR_CLIENT_SECRET
+&refresh_token=YOUR_REFRESH_TOKEN
 ```
 
 Developer Portal apps always receive a client secret, so send it. Only a public (PKCE-only) client without a secret would omit it.
@@ -188,7 +188,7 @@ Verify the token and discover accessible company accounts:
 
 ```http
 GET /users/me
-Authorization: Bearer <access_token>
+Authorization: Bearer YOUR_API_KEY
 ```
 
 Response includes the authenticated user's profile, an `accounts` array listing every Scoro company account (business entity) the user can access, `enabledPermissions`, and the user's formatting preferences (`baseCurrency`, `dateFormat`, `timeFormat`, `thousandSeparator`, `decimalSeparator`). The `accounts` values are **string identifiers** (e.g. `["mycompany", "mycompany_uk"]`) — use one of these in the `Scoro-Company-Account` header.
@@ -204,7 +204,7 @@ Some Scoro sites run multiple business entities (company accounts) under one log
 
 ```http
 GET /tasks
-Authorization: Bearer <access_token>
+Authorization: Bearer YOUR_API_KEY
 Scoro-Company-Account: mycompany
 ```
 

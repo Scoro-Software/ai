@@ -1,8 +1,8 @@
 {
   "name": "scoro",
   "displayName": "Scoro",
-  "description": "Plugin that includes the Scoro MCP server and Skills for common workflows",
-  "version": "0.8.2",
+  "description": "Skills that teach AI coding agents how to build on the Scoro API v4",
+  "version": "0.9.1",
   "author": {
     "name": "Scoro",
     "email": "help@scoro.com",
