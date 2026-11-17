@@ -2,7 +2,7 @@
   "name": "scoro",
   "displayName": "Scoro",
   "description": "Skills that teach AI coding agents how to build on the Scoro API v4",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "author": {
     "name": "Scoro",
     "email": "help@scoro.com",
