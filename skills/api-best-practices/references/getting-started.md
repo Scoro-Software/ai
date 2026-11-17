@@ -43,9 +43,11 @@ openapi-generator generate -i "$SPEC" -g markdown \
   --openapi-normalizer KEEP_ONLY_FIRST_TAG_IN_OPERATION=true -o ./scoro-api-docs
 ```
 
-Generate into a dedicated empty directory, never a project root. Offline, pass a downloaded copy of the schema to `-i` instead of the URL. The generated Go module still has a placeholder module path: set it in `go.mod`, or pass `--git-user-id myorg --git-repo-id scoro-api`. The full command list and what each starter config sets are in `openapi-generator/README.md`.
+Generate into a dedicated empty directory, never a project root. Offline, pass a downloaded copy of the schema to `-i` instead of the URL. The generated Go module still has a placeholder module path unless you pass `--git-user-id myorg --git-repo-id scoro-api`. The full command list and what each starter config sets are in `openapi-generator/README.md`.
 
 ### Configure the generated client
+
+In every sample below, `accessToken` is the `access_token` value returned by the Scoro OAuth token endpoint (see "Getting a token" and "Refreshing the token"), held in memory by your application after the user signs in. The samples do not read credentials from environment variables, config files or the keychain, and the token is only ever sent to the user's own Scoro site at `https://{yoursite}.scoro.com`. Where your application keeps the token between runs is your decision; follow the Developer Portal's security guidance and never log or commit it.
 
 - **The base URL is the bare site host**, `https://{yoursite}.scoro.com`. The generated paths already contain `/api/v4`; a base URL ending in `/api/v4` sends every request to `/api/v4/api/v4/...`.
 - **Bearer token:** every operation is marked OAuth2 in the schema, so each client has a token setting. The TypeScript client sends `accessToken` as-is, so include the `Bearer ` prefix there; Python, Go and PHP add it.
@@ -54,10 +56,10 @@ Generate into a dedicated empty directory, never a project root. Offline, pass a
 
 ```ts
 // typescript-fetch
-import { Configuration, TasksApi } from 'scoro-api-client'; // after: npm install ./scoro-api-client-typescript-fetch
+import { Configuration, TasksApi } from 'scoro-api-client'; // the generated package, added to the project as a local dependency
 const tasks = new TasksApi(new Configuration({
   basePath: 'https://mycompany.scoro.com',
-  accessToken: async () => `Bearer ${await getFreshToken()}`,
+  accessToken: async () => `Bearer ${await oauth.currentAccessToken()}`, // access_token from the OAuth token response
   headers: { 'Scoro-Company-Account': 'mycompany' },
 }));
 ```
@@ -65,7 +67,7 @@ const tasks = new TasksApi(new Configuration({
 ```python
 # python
 import scoro_api
-config = scoro_api.Configuration(host="https://mycompany.scoro.com", access_token=token)
+config = scoro_api.Configuration(host="https://mycompany.scoro.com", access_token=access_token)  # from the OAuth token response
 client = scoro_api.ApiClient(config)
 client.set_default_header("Scoro-Company-Account", "mycompany")
 tasks = scoro_api.TasksApi(client)
@@ -78,12 +80,12 @@ cfg.Servers = scoroapi.ServerConfigurations{{URL: "https://mycompany.scoro.com"}
 cfg.AddDefaultHeader("Scoro-Company-Account", "mycompany")
 client := scoroapi.NewAPIClient(cfg)
 ctx := context.WithValue(context.Background(), scoroapi.ContextOAuth2,
-    oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+    oauth2.StaticTokenSource(&oauth2.Token{AccessToken: accessToken})) // from the OAuth token response
 ```
 
 ```php
 // php
-$config = (new \Scoro\Api\Configuration())->setHost('https://mycompany.scoro.com')->setAccessToken($token);
+$config = (new \Scoro\Api\Configuration())->setHost('https://mycompany.scoro.com')->setAccessToken($accessToken); // from the OAuth token response
 $http = new \GuzzleHttp\Client(['headers' => ['Scoro-Company-Account' => 'mycompany']]);
 $tasks = new \Scoro\Api\Api\TasksApi($http, $config);
 ```
