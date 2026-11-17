@@ -14,7 +14,7 @@
 Register at [developers.scoro.com](https://developers.scoro.com) (Google or Microsoft sign-in). The full walkthrough, every option on the form and the publishing flow are in `references/developer-portal.md`. The short version:
 
 - Choose the **OAuth** (API v4) authentication type and, to start, the **Private** app type: private apps work without review on up to 3 Scoro sites you list. **Public** apps are reviewed by Scoro and then listed in the App Store for every customer.
-- Add at least one **callback URL** (your `redirect_uri`, matched exactly) and one **site URL** (`https://{yoursite}.scoro.com`).
+- Add at least one **callback URL** (your `redirect_uri`, matched exactly) and one **site URL**, the address of a Scoro site such as `https://{yoursite}.scoro.com`.
 - Set the **access** (scopes) explicitly. A token can never hold more than the app's configured scopes — requesting more is silently narrowed to what is configured. `base:r` (reference data such as statuses, tax rates and `/users/me`) is added to every token automatically. In production, always request least-privilege scopes.
 - Save, then **Generate OAuth credentials**. The **client secret is shown once** — copy it immediately; if lost, rotate it from the portal with a grace period. The `client_id` is the **OAuth Client ID** on that card, not the App ID in the header.
 
@@ -49,7 +49,7 @@ Generate into a dedicated empty directory, never a project root. Offline, pass a
 
 In every sample below, `YOUR_API_KEY` is a placeholder for the `access_token` value returned by the Scoro OAuth token endpoint (see "Getting a token" and "Refreshing the token"). Replace it with the token your application received after the user signed in. The token is only ever sent to the user's own Scoro site at `https://{yoursite}.scoro.com`; never log or commit a real one.
 
-- **The base URL is the bare site host**, `https://{yoursite}.scoro.com`. The generated paths already contain `/api/v4`; a base URL ending in `/api/v4` sends every request to `/api/v4/api/v4/...`.
+- **Point the client at `https://{yoursite}.scoro.com`, the bare site host.** The generated paths already contain `/api/v4`; a base path ending in `/api/v4` sends every request to `/api/v4/api/v4/...`.
 - **Bearer token:** every operation is marked OAuth2 in the schema, so each client has a token setting. The TypeScript client sends the token as-is, so include the `Bearer ` prefix there; Python, Go and PHP add it.
 - **`Scoro-Company-Account`** is declared as an optional header parameter on every operation, so every generated method accepts it. Set it once as a default header instead of passing it per call.
 - The TypeScript client names the `File` model `ModelFile`, because `File` is a built-in type.
@@ -57,8 +57,9 @@ In every sample below, `YOUR_API_KEY` is a placeholder for the `access_token` va
 ```ts
 // typescript-fetch
 import { Configuration, TasksApi } from 'scoro-api-client'; // the generated package
+const site = 'https://mycompany.scoro.com'; // the bare site host, no /api/v4
 const tasks = new TasksApi(new Configuration({
-  basePath: 'https://mycompany.scoro.com',
+  basePath: site,
   accessToken: 'Bearer YOUR_API_KEY', // or an async function that returns the current token, Bearer prefix included
   headers: { 'Scoro-Company-Account': 'mycompany' },
 }));
@@ -67,7 +68,8 @@ const tasks = new TasksApi(new Configuration({
 ```python
 # python
 import scoro_api
-config = scoro_api.Configuration(host="https://mycompany.scoro.com", access_token="YOUR_API_KEY")
+site = "https://mycompany.scoro.com"  # the bare site host, no /api/v4
+config = scoro_api.Configuration(host=site, access_token="YOUR_API_KEY")
 client = scoro_api.ApiClient(config)
 client.set_default_header("Scoro-Company-Account", "mycompany")
 tasks = scoro_api.TasksApi(client)
@@ -75,8 +77,9 @@ tasks = scoro_api.TasksApi(client)
 
 ```go
 // go
+site := "https://mycompany.scoro.com" // the bare site host, no /api/v4
 cfg := scoroapi.NewConfiguration()
-cfg.Servers = scoroapi.ServerConfigurations{{URL: "https://mycompany.scoro.com"}}
+cfg.Servers = scoroapi.ServerConfigurations{{URL: site}}
 cfg.AddDefaultHeader("Scoro-Company-Account", "mycompany")
 client := scoroapi.NewAPIClient(cfg)
 ctx := context.WithValue(context.Background(), scoroapi.ContextOAuth2,
@@ -85,7 +88,8 @@ ctx := context.WithValue(context.Background(), scoroapi.ContextOAuth2,
 
 ```php
 // php
-$config = (new \Scoro\Api\Configuration())->setHost('https://mycompany.scoro.com')->setAccessToken('YOUR_API_KEY');
+$site = 'https://mycompany.scoro.com'; // the bare site host, no /api/v4
+$config = (new \Scoro\Api\Configuration())->setHost($site)->setAccessToken('YOUR_API_KEY');
 $http = new \GuzzleHttp\Client(['headers' => ['Scoro-Company-Account' => 'mycompany']]);
 $tasks = new \Scoro\Api\Api\TasksApi($http, $config);
 ```
@@ -166,21 +170,16 @@ The response contains:
 
 ## Refreshing the token
 
-Refresh before the access token expires:
+Refresh before the access token expires with a form-encoded `POST` to the token endpoint:
 
 ```http
 POST https://{yoursite}.scoro.com/auth/oauth/token
 Content-Type: application/x-www-form-urlencoded
-
-grant_type=refresh_token
-&client_id=YOUR_CLIENT_ID
-&client_secret=YOUR_CLIENT_SECRET
-&refresh_token=YOUR_REFRESH_TOKEN
 ```
 
-Developer Portal apps always receive a client secret, so send it. Only a public (PKCE-only) client without a secret would omit it.
+The form fields are `grant_type` (always `refresh_token`), `client_id` (the OAuth Client ID), `client_secret` (the app's client secret) and `refresh_token` (the latest refresh token you received). Developer Portal apps always receive a client secret, so send it. Only a public (PKCE-only) client without a secret would omit it.
 
-Store the `access_token` and `refresh_token` from every response and use the latest refresh token next time. Refreshing extends the refresh token's lifetime. Do **not** send `scope` on a refresh request: a refresh that names scopes is narrowed to those scopes, and nothing but a new authorization can widen a grant.
+Keep the `access_token` and `refresh_token` from every response and use the latest refresh token next time. Refreshing extends the refresh token's lifetime. Do **not** send `scope` on a refresh request: a refresh that names scopes is narrowed to those scopes, and nothing but a new authorization can widen a grant.
 
 ## Making the first call
 

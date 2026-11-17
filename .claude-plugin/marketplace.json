@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "scoro",
-      "source": "./",
+      "source": ".",
       "description": "Scoro API v4 best practices for AI coding agents."
     }
   ]
