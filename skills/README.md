@@ -12,16 +12,16 @@ Agent skills that give AI coding assistants accurate, up-to-date guidance on wor
 
 ### Claude Code
 
-**As a plugin.** The whole repo is a Claude Code plugin. Register it as a marketplace once, then install:
+**As a plugin.** The whole repo is a Claude Code plugin. Add it from the [Claude plugin directory](https://claude.ai/directory) on claude.ai; it then loads in your Claude Code sessions too. To try a clone for one session instead:
 
 ```bash
-claude plugin marketplace add Scoro-Software/ai
-claude plugin install scoro@scoro-ai
+git clone https://github.com/Scoro-Software/ai.git
+claude --plugin-dir ./ai
 ```
 
 Claude loads the API skill on its own when a task touches the Scoro API; you can also invoke it with `/scoro:api-best-practices`. Reference guides in `references/` are opened by the agent on demand.
 
-The skill's `openapi-generator/` folder holds starter configs for generating a typed client (TypeScript, Python, Go, PHP) or a browsable endpoint reference from the public OpenAPI schema with openapi-generator. It needs openapi-generator installed (Homebrew, npm or pip; Java 11+); the commands are in [`api-best-practices/openapi-generator/README.md`](./api-best-practices/openapi-generator/README.md). Installs that only reference `SKILL.md` by URL can still read the schema at `https://api.scoro.com/api/v4/reference/openapi` directly.
+The skill's `openapi-generator/` folder holds starter configs for generating a typed client (TypeScript, Python, Go, PHP) or a browsable endpoint reference from the public OpenAPI schema with openapi-generator. It needs openapi-generator installed (see its [installation guide](https://openapi-generator.tech/docs/installation); Java 11+); the commands are in [`api-best-practices/openapi-generator/README.md`](./api-best-practices/openapi-generator/README.md). Installs that only reference `SKILL.md` by URL can still read the schema at `https://api.scoro.com/api/v4/reference/openapi` directly.
 
 ### Cursor
 
